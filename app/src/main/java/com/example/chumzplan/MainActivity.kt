@@ -1,3 +1,8 @@
+// ============================================
+// FILE: MainActivity.kt (UPDATED)
+// Replace your existing MainActivity.kt with this
+// ============================================
+
 package com.example.chumzplan
 
 import android.os.Bundle
@@ -18,22 +23,127 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.chumzplan.ui.onboarding.*
 import com.example.chumzplan.ui.theme.ChumzPlanTheme
-import java.text.NumberFormat
-import java.util.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ChumzPlanTheme {
-                HelbApp()
+                AppNavigation()
             }
         }
     }
 }
 
-// Navigation Setup
+// ============================================
+// Navigation Routes
+// ============================================
+
+sealed class Route(val route: String) {
+    object Onboarding1 : Route("onboarding1")
+    object Onboarding2 : Route("onboarding2")
+    object Onboarding3 : Route("onboarding3")
+    object Dashboard : Route("dashboard")
+    object Transactions : Route("transactions")
+    object Categories : Route("categories")
+    object Insights : Route("insights")
+}
+
+// ============================================
+// Main App Navigation
+// ============================================
+
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+
+    // Shared state to store onboarding data
+    var userName by remember { mutableStateOf("") }
+    var userAge by remember { mutableStateOf("") }
+    var userUniversity by remember { mutableStateOf("") }
+    var loanAmount by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf("") }
+    var endDate by remember { mutableStateOf("") }
+
+    NavHost(
+        navController = navController,
+        startDestination = Route.Onboarding1.route
+    ) {
+        // Onboarding Screen 1
+        composable(Route.Onboarding1.route) {
+            OnboardingScreen1(
+                onNext = { name, age, university ->
+                    userName = name
+                    userAge = age
+                    userUniversity = university
+                    navController.navigate(Route.Onboarding2.route)
+                },
+                onSkip = {
+                    navController.navigate(Route.Dashboard.route) {
+                        popUpTo(Route.Onboarding1.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Onboarding Screen 2
+        composable(Route.Onboarding2.route) {
+            OnboardingScreen2(
+                onNext = { loan, start, end ->
+                    loanAmount = loan
+                    startDate = start
+                    endDate = end
+                    navController.navigate(Route.Onboarding3.route)
+                },
+                onSkip = {
+                    navController.navigate(Route.Dashboard.route) {
+                        popUpTo(Route.Onboarding1.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Onboarding Screen 3
+        composable(Route.Onboarding3.route) {
+            OnboardingScreen3(
+                totalAmount = loanAmount.toDoubleOrNull() ?: 45000.0,
+                onComplete = { categories ->
+                    // Save all data (will connect to database later)
+                    // For now, just navigate to dashboard
+                    navController.navigate(Route.Dashboard.route) {
+                        popUpTo(Route.Onboarding1.route) { inclusive = true }
+                    }
+                },
+                onSkip = {
+                    navController.navigate(Route.Dashboard.route) {
+                        popUpTo(Route.Onboarding1.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Main App (with bottom navigation)
+        composable(Route.Dashboard.route) {
+            MainApp(navController)
+        }
+        composable(Route.Transactions.route) {
+            MainApp(navController)
+        }
+        composable(Route.Categories.route) {
+            MainApp(navController)
+        }
+        composable(Route.Insights.route) {
+            MainApp(navController)
+        }
+    }
+}
+
+// ============================================
+// Main App with Bottom Navigation
+// ============================================
+
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Home)
     object Transactions : Screen("transactions", "Transactions", Icons.Default.List)
@@ -42,30 +152,32 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 }
 
 @Composable
-fun HelbApp() {
-    val navController = rememberNavController()
+fun MainApp(navController: NavHostController) {
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     Scaffold(
-        bottomBar = { BottomNavigationBar(navController) }
+        bottomBar = { BottomNavigationBar(currentRoute, navController) }
     ) { paddingValues ->
-        NavigationHost(
-            navController = navController,
-            modifier = Modifier.padding(paddingValues)
-        )
+        Box(modifier = Modifier.padding(paddingValues)) {
+            when (currentRoute) {
+                Route.Dashboard.route -> DashboardScreen()
+                Route.Transactions.route -> TransactionsScreen()
+                Route.Categories.route -> CategoriesScreen()
+                Route.Insights.route -> InsightsScreen()
+                else -> DashboardScreen()
+            }
+        }
     }
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
+fun BottomNavigationBar(currentRoute: String?, navController: NavHostController) {
     val items = listOf(
         Screen.Dashboard,
         Screen.Transactions,
         Screen.Categories,
         Screen.Insights
     )
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar {
         items.forEach { screen ->
@@ -75,7 +187,7 @@ fun BottomNavigationBar(navController: NavHostController) {
                 selected = currentRoute == screen.route,
                 onClick = {
                     navController.navigate(screen.route) {
-                        popUpTo(navController.graph.startDestinationId) {
+                        popUpTo(Route.Dashboard.route) {
                             saveState = true
                         }
                         launchSingleTop = true
@@ -87,28 +199,13 @@ fun BottomNavigationBar(navController: NavHostController) {
     }
 }
 
-@Composable
-fun NavigationHost(
-    navController: NavHostController,
-    modifier: Modifier = Modifier
-) {
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Dashboard.route,
-        modifier = modifier
-    ) {
-        composable(Screen.Dashboard.route) { DashboardScreen() }
-        composable(Screen.Transactions.route) { TransactionsScreen() }
-        composable(Screen.Categories.route) { CategoriesScreen() }
-        composable(Screen.Insights.route) { InsightsScreen() }
-    }
-}
+// ============================================
+// Dashboard Screen (from before)
+// ============================================
 
-// Dashboard Screen - Main Feature
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen() {
-    // Mock data for HELB loan tracking
     val totalLoanAmount = 45000.0
     val currentBalance = 32500.0
     val daysLeft = 67
@@ -117,7 +214,7 @@ fun DashboardScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ChumzPlan") },
+                title = { Text("HELB Loan Manager") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
@@ -125,7 +222,7 @@ fun DashboardScreen() {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Will add transaction functionality */ },
+                onClick = { },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Expense")
@@ -139,19 +236,10 @@ fun DashboardScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Welcome Card with semester countdown
             WelcomeCard(daysLeft)
-
-            // Balance Overview with visual indicator
             BalanceCard(currentBalance, totalLoanAmount)
-
-            // Daily Budget Calculator
             DailyBudgetCard(dailyBudget)
-
-            // Quick Stats
             QuickStatsRow()
-
-            // Recent Transactions Preview
             RecentTransactionsCard()
         }
     }
@@ -165,9 +253,7 @@ fun WelcomeCard(daysLeft: Int) {
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Welcome Back! 👋",
                 style = MaterialTheme.typography.headlineSmall,
@@ -176,8 +262,7 @@ fun WelcomeCard(daysLeft: Int) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "$daysLeft days left in semester",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                style = MaterialTheme.typography.bodyLarge
             )
         }
     }
@@ -186,47 +271,20 @@ fun WelcomeCard(daysLeft: Int) {
 @Composable
 fun BalanceCard(currentBalance: Double, totalAmount: Double) {
     val progress = (currentBalance / totalAmount).toFloat()
-    val formatter = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Current Balance",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Current Balance", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = formatter.format(currentBalance),
+                text = "KES ${currentBalance.toInt()}",
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = when {
-                    progress > 0.5f -> MaterialTheme.colorScheme.primary
-                    progress > 0.25f -> MaterialTheme.colorScheme.tertiary
-                    else -> MaterialTheme.colorScheme.error
-                }
+                fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                color = when {
-                    progress > 0.5f -> MaterialTheme.colorScheme.primary
-                    progress > 0.25f -> MaterialTheme.colorScheme.tertiary
-                    else -> MaterialTheme.colorScheme.error
-                },
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "of ${formatter.format(totalAmount)} HELB loan",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                modifier = Modifier.fillMaxWidth().height(8.dp)
             )
         }
     }
@@ -234,8 +292,6 @@ fun BalanceCard(currentBalance: Double, totalAmount: Double) {
 
 @Composable
 fun DailyBudgetCard(dailyBudget: Double) {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("en", "KE"))
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -243,29 +299,18 @@ fun DailyBudgetCard(dailyBudget: Double) {
         )
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    text = "Daily Budget",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "You can spend today",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                )
+                Text("Daily Budget", style = MaterialTheme.typography.titleMedium)
+                Text("You can spend today")
             }
             Text(
-                text = formatter.format(dailyBudget),
+                text = "KES ${dailyBudget.toInt()}",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -277,37 +322,21 @@ fun QuickStatsRow() {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StatCard(
-            title = "This Week",
-            amount = "KES 3,450",
-            modifier = Modifier.weight(1f)
-        )
-        StatCard(
-            title = "This Month",
-            amount = "KES 12,500",
-            modifier = Modifier.weight(1f)
-        )
+        StatCard("This Week", "KES 3,450", Modifier.weight(1f))
+        StatCard("This Month", "KES 12,500", Modifier.weight(1f))
     }
 }
 
 @Composable
-fun StatCard(title: String, amount: String, modifier: Modifier = Modifier) {
+fun StatCard(title: String, amount: String, modifier: Modifier) {
     Card(modifier = modifier) {
         Column(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            Text(title, style = MaterialTheme.typography.bodySmall)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = amount,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Text(amount, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -318,24 +347,14 @@ fun RecentTransactionsCard() {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Recent Transactions",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                TextButton(onClick = { /* Navigate to transactions */ }) {
-                    Text("View All")
-                }
+                Text("Recent Transactions", fontWeight = FontWeight.Bold)
+                TextButton(onClick = { }) { Text("View All") }
             }
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Sample Kenyan student transactions
             TransactionItem("🍽️", "Lunch at Cafeteria", "KES 200", "Today")
             TransactionItem("🚌", "Matatu to Town", "KES 100", "Today")
-            TransactionItem("📚", "Engineering Textbook", "KES 1,500", "Yesterday")
         }
     }
 }
@@ -343,116 +362,50 @@ fun RecentTransactionsCard() {
 @Composable
 fun TransactionItem(icon: String, title: String, amount: String, date: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = icon, style = MaterialTheme.typography.headlineMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(icon, style = MaterialTheme.typography.headlineMedium)
             Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = date,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+                Text(title)
+                Text(date, style = MaterialTheme.typography.bodySmall)
             }
         }
-        Text(
-            text = amount,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.error
-        )
+        Text(amount, fontWeight = FontWeight.Bold)
     }
 }
 
-// Placeholder Screens - Show navigation is working
+// Placeholder Screens
 @Composable
 fun TransactionsScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.List,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Transactions Screen",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                text = "All your expenses & income will appear here",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            Icon(Icons.Default.List, null, modifier = Modifier.size(64.dp))
+            Spacer(Modifier.height(16.dp))
+            Text("Transactions Screen", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
 
 @Composable
 fun CategoriesScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.Category,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Categories Screen",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                text = "Manage your spending categories",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            Icon(Icons.Default.Category, null, modifier = Modifier.size(64.dp))
+            Spacer(Modifier.height(16.dp))
+            Text("Categories Screen", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
 
 @Composable
 fun InsightsScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.BarChart,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Insights & Reports",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                text = "View spending trends and analytics",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            Icon(Icons.Default.BarChart, null, modifier = Modifier.size(64.dp))
+            Spacer(Modifier.height(16.dp))
+            Text("Insights Screen", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
