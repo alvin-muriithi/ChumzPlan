@@ -18,12 +18,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.text.NumberFormat
+import java.*
 import java.util.*
-
-// ============================================
-// SCREEN 1: Personal Information
-// ============================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,10 +31,11 @@ fun OnboardingScreen1(
     var age by remember { mutableStateOf("") }
     var university by remember { mutableStateOf("") }
 
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1E4D5C)) // Dark teal background
+            .background(Color(0xFF1E4D5C))
     ) {
         Column(
             modifier = Modifier
@@ -47,72 +44,72 @@ fun OnboardingScreen1(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Step Indicator
-            Spacer(modifier = Modifier.height(32.dp))
+
+            Spacer(modifier = Modifier.height(10.dp))
             StepIndicator(currentStep = 1, totalSteps = 3)
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(15.dp))
 
-            // Title
+
             Text(
                 text = "Tell us about\nyourself",
-                fontSize = 32.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 lineHeight = 40.sp
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Icon
+
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = null,
-                tint = Color(0xFF4DD0E1), // Cyan
-                modifier = Modifier.size(48.dp)
+                tint = Color(0xFF4DD0E1),
+                modifier = Modifier.size(42.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Input Fields
+
             OnboardingTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = "Your Name",
-                placeholder = "e.g., Jane Wanjiku",
-                leadingIcon = Icons.Default.Person
-            )
+                placeholder = "e.g Alvin Muriithi",
+                leadingIcon = Icons.Default.Person,
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             OnboardingTextField(
                 value = age,
                 onValueChange = { age = it },
-                label = "Age",
-                placeholder = "21",
+                label = "Your Age",
+                placeholder = "20",
                 leadingIcon = Icons.Default.Cake,
                 keyboardType = KeyboardType.Number
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             OnboardingTextField(
                 value = university,
                 onValueChange = { university = it },
                 label = "University/College",
-                placeholder = "e.g., University of Nairobi",
+                placeholder = "e.g University of Nairobi",
                 leadingIcon = Icons.Default.School
             )
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Next Button
+
             Button(
                 onClick = { onNext(name, age, university) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(44.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF4DD0E1) // Cyan
                 ),
@@ -129,7 +126,7 @@ fun OnboardingScreen1(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Skip Button
+
             TextButton(onClick = onSkip) {
                 Text(
                     text = "Skip for now",
@@ -142,10 +139,6 @@ fun OnboardingScreen1(
         }
     }
 }
-
-// ============================================
-// SCREEN 2: Semester Details
-// ============================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -160,7 +153,7 @@ fun OnboardingScreen2(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE3F2FD)) // Light blue background
+            .background(Color(0xFF1E4D5C)) // Light blue background
     ) {
         Column(
             modifier = Modifier
@@ -169,25 +162,25 @@ fun OnboardingScreen2(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Step Indicator
+
             Spacer(modifier = Modifier.height(32.dp))
             StepIndicator(currentStep = 2, totalSteps = 3)
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Title
+
             Text(
                 text = "Tell us about your\nsemester",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E4D5C),
+                color = Color.White,
                 textAlign = TextAlign.Center,
                 lineHeight = 36.sp
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Total HELB Loan Amount
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -279,11 +272,11 @@ fun OnboardingScreen2(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Skip Button
+
             TextButton(onClick = onSkip) {
                 Text(
                     text = "Skip for now",
-                    color = Color(0xFF1E4D5C).copy(alpha = 0.6f),
+                    color = Color.White.copy(alpha = 0.7f),
                     fontSize = 16.sp
                 )
             }
