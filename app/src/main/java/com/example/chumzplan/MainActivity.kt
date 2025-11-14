@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.chumzplan.ui.dashboard.ChumzPlanDashboard
+import com.example.chumzplan.ui.dashboard.*
 import com.example.chumzplan.ui.onboarding.*
 import com.example.chumzplan.ui.theme.ChumzPlanTheme
 
@@ -116,7 +116,7 @@ fun AppNavigation() {
 
         // Main Dashboard
         composable(Route.Dashboard.route) {
-            ChumzPlanDashboard(
+            StretchItDashboard(
                 onAddExpense = {
                     // TODO: Navigate to add expense screen
                 },
